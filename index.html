@@ -1,14 +1,226 @@
-<html>
-  <head>
-    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-  </head>
-  <body>
-    <a-scene>
-      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
-      <a-sky color="#ECECEC"></a-sky>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Mascota Interactiva - didaci canvas</title>
+    <!-- Incluye A-Frame (para la escena 3D y elementos) -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <!-- Incluye AR.js (para la Realidad Aumentada basada en marcadores) -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <style>
+        /* Estilos generales para ocupar toda la pantalla y centrar la experiencia en móvil */
+        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
+
+        /* Contenedor del mensaje de interacción (UI superior) */
+        #interaction-message {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(4, 91, 193, 0.85); /* Azul corporativo */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0; /* Inicialmente oculto */
+            transition: opacity 0.5s, transform 0.3s;
+            font-size: 14px;
+            text-align: center;
+        }
+        #interaction-message.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Estilo para el botón de Cupón Digital (UI inferior) */
+        #coupon-button {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 25px;
+            background: #FFD700; /* Dorado para destacar */
+            color: #333;
+            border: none;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px #b89f00;
+            transition: all 0.1s ease;
+            z-index: 1000;
+            display: none; /* Inicialmente oculto */
+        }
+        #coupon-button:active {
+            box-shadow: 0 2px #b89f00;
+            transform: translateX(-50%) translateY(4px);
+        }
+    </style>
+</head>
+<body>
+
+    <!--
+      ESCENA A-FRAME Y AR.JS
+      Se utiliza 'hiro' como marcador de prueba. En la implementación final en GitHub Pages,
+      deberás cambiarlo por un patrón personalizado si no quieres depender del patrón Hiro.
+    -->
+    <a-scene embedded arjs='sourceType: webcam; detectionMode: mono; cameraParametersUrl: https://raw.githack.com/AR-js-org/AR.js/master/data/camera_para.dat; debugUIEnabled: false;'>
+
+        <!-- Marcador AR - Usando el preset 'hiro' para pruebas -->
+        <a-marker id="pet-marker" preset='hiro'>
+            <!-- Entidad Contenedora para la Mascota Interactiva -->
+            <a-entity id="pet-model"
+                      interactive-pet
+                      position="0 0.5 0"
+                      rotation="0 0 0"
+                      scale="1 1 1">
+
+                <!-- 1. El Cuerpo Principal (Cubo Holográfico - didaci canvas) -->
+                <a-box id="body-cube"
+                       position="0 0 0"
+                       rotation="0 0 0"
+                       width="1" height="1" depth="1"
+                       color="#5E17EB"
+                       material="shader: standard; roughness: 0.1; metalness: 0.8"
+                       animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear;">
+                </a-box>
+
+                <!-- 2. Nodos de Luz Parpadeantes para indicar interactividad -->
+                <a-sphere position="0.5 0.5 0.5" radius="0.1" color="#FFD700"
+                          animation__pulse="property: scale; from: 1 1 1; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 500;"></a-sphere>
+                <a-sphere position="-0.5 0.5 -0.5" radius="0.1" color="#FFD700"
+                          animation__pulse="property: scale; from: 1 1 1; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 500; delay: 250;"></a-sphere>
+
+            </a-entity>
+        </a-marker>
+
+        <!-- Entidad de Cámara (necesaria para AR.js) -->
+        <a-entity camera></a-entity>
     </a-scene>
-  </body>
+
+    <!-- UI: Mensajes y Botón de Cupón -->
+    <div id="interaction-message">Buscando el código QR...</div>
+    <button id="coupon-button" onclick="showCoupon()">¡Reclamar Cupón Digital!</button>
+
+    <script>
+        // --- VARIABLES GLOBALES ---
+        let isDancing = false;
+        const marker = document.getElementById('pet-marker');
+        const messageBox = document.getElementById('interaction-message');
+        const couponButton = document.getElementById('coupon-button');
+
+        // --- FUNCIONES DE UTILIDAD PARA EL AUDIO (Generación de tono simple) ---
+        let audioContext;
+        let gainNode;
+
+        // Inicializa el contexto de audio solo tras una interacción del usuario
+        function initAudio() {
+            if (audioContext) return;
+            // Intenta crear el contexto, manejando compatibilidad
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            gainNode = audioContext.createGain();
+            gainNode.connect(audioContext.destination);
+            // Asegura que el sonido empieza mudo
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        }
+
+        // Reproduce un sonido de tono (chirp)
+        function playSound(frequency, duration) {
+            initAudio(); // Asegura la inicialización
+
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.connect(gainNode);
+
+            // Iniciar el sonido (a volumen 1, para un bip corto y notorio)
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+            oscillator.start();
+
+            // Detener el sonido después de la duración con un fade-out rápido
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        // --- COMPONENTE CUSTOM DE A-FRAME PARA LA INTERACCIÓN ---
+        AFRAME.registerComponent('interactive-pet', {
+            init: function () {
+                const el = this.el;
+
+                // Evento 1: Cuando el marcador (QR) es encontrado
+                marker.addEventListener('markerFound', () => {
+                    messageBox.innerText = '¡La mascota didaci canvas ha aparecido! TÓCALA para interactuar.';
+                    messageBox.classList.add('visible');
+                    // Reiniciar estados al encontrar el marcador
+                    couponButton.style.display = 'none';
+                    isDancing = false;
+                    el.removeAttribute('animation__dance');
+                    el.removeAttribute('animation__spin');
+                });
+
+                // Evento 2: Cuando el marcador (QR) es perdido
+                marker.addEventListener('markerLost', () => {
+                    messageBox.innerText = 'Buscando el código QR...';
+                    couponButton.style.display = 'none';
+                    // Nota: Mantenemos 'visible' para indicar que está esperando el marcador
+                });
+
+                // Evento 3: Lógica de Interacción al Tocar (click o tap)
+                el.addEventListener('click', this.handleInteraction);
+            },
+
+            handleInteraction: function() {
+                if (isDancing) {
+                    messageBox.innerText = '¡Ya está bailando! ¡Reclama tu cupón!';
+                    return;
+                }
+
+                // Obtener el elemento del modelo
+                const petModelEl = document.getElementById('pet-model');
+
+                // 1. Iniciar Baile (Animaciones)
+                petModelEl.setAttribute('animation__dance', {
+                    property: 'position',
+                    from: '0 0.5 0',
+                    to: '0 0.6 0', // Pequeño salto
+                    dir: 'alternate',
+                    loop: true,
+                    dur: 200 // Velocidad del baile
+                });
+                petModelEl.setAttribute('animation__spin', {
+                    property: 'rotation',
+                    to: '0 360 0',
+                    loop: true,
+                    dur: 2000,
+                    easing: 'linear'
+                });
+
+                isDancing = true;
+                messageBox.innerText = '¡Qué bien! didaci canvas está bailando para ti. ¡Aquí está tu recompensa!';
+
+                // 2. Activar Sonido
+                playSound(880, 0.2);
+
+                // 3. Lanzar Cupón Digital (mostrar el botón de la UI)
+                setTimeout(() => {
+                    couponButton.style.display = 'block';
+                    messageBox.innerText = '¡Toca el botón para conseguir tu premio!';
+                }, 500);
+            }
+        });
+
+        // --- FUNCIÓN DEL CUPÓN DIGITAL (Control UI) ---
+        function showCoupon() {
+            // Lógica de simulación de reclamo de cupón
+            couponButton.style.display = 'none';
+            messageBox.style.background = 'rgba(255, 69, 0, 0.9)'; // Cambia el color para resaltar
+            messageBox.innerText = '🎉 CUPÓN RECLAMADO: ¡20% de descuento en tu próxima compra! 🎉';
+
+            // Aquí se haría la redirección real:
+            // window.open("https://tu-sitio-web.com/reclamo-cupon", "_blank");
+        }
+    </script>
+
+</body>
 </html>
