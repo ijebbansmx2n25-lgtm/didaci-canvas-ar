@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Mascota Interactiva - didaci canvas</title>
-    <!-- Incluye A-Frame (para la escena 3D y elementos) -->
+    <title>AR Mascota Gato Interactiva - didaci canvas</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <!-- Incluye AR.js (para la Realidad Aumentada basada en marcadores) -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         /* Estilos generales para ocupar toda la pantalla y centrar la experiencia en móvil */
@@ -60,46 +58,22 @@
 </head>
 <body>
 
-    <!--
-      ESCENA A-FRAME Y AR.JS
-      Se utiliza 'hiro' como marcador de prueba. En la implementación final en GitHub Pages,
-      deberás cambiarlo por un patrón personalizado si no quieres depender del patrón Hiro.
-    -->
     <a-scene embedded arjs='sourceType: webcam; detectionMode: mono; cameraParametersUrl: https://raw.githack.com/AR-js-org/AR.js/master/data/camera_para.dat; debugUIEnabled: false;'>
 
-        <!-- Marcador AR - Usando el preset 'hiro' para pruebas -->
         <a-marker id="pet-marker" preset='hiro'>
-            <!-- Entidad Contenedora para la Mascota Interactiva -->
             <a-entity id="pet-model"
                       interactive-pet
-                      position="0 0.5 0"
-                      rotation="0 0 0"
-                      scale="1 1 1">
-
-                <!-- 1. El Cuerpo Principal (Cubo Holográfico - didaci canvas) -->
-                <a-box id="body-cube"
-                       position="0 0 0"
-                       rotation="0 0 0"
-                       width="1" height="1" depth="1"
-                       color="#5E17EB"
-                       material="shader: standard; roughness: 0.1; metalness: 0.8"
-                       animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear;">
-                </a-box>
-
-                <!-- 2. Nodos de Luz Parpadeantes para indicar interactividad -->
-                <a-sphere position="0.5 0.5 0.5" radius="0.1" color="#FFD700"
-                          animation__pulse="property: scale; from: 1 1 1; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 500;"></a-sphere>
-                <a-sphere position="-0.5 0.5 -0.5" radius="0.1" color="#FFD700"
-                          animation__pulse="property: scale; from: 1 1 1; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 500; delay: 250;"></a-sphere>
+                      position="0 0.0 0" rotation="0 0 0"
+                      scale="0.05 0.05 0.05"> <a-gltf-model src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/RiggedSimple/glTF/RiggedSimple.gltf"
+                              animation-mixer="clip: idle;" id="cat-gltf"
+                              rotation="0 180 0"> </a-gltf-model>
 
             </a-entity>
         </a-marker>
 
-        <!-- Entidad de Cámara (necesaria para AR.js) -->
         <a-entity camera></a-entity>
     </a-scene>
 
-    <!-- UI: Mensajes y Botón de Cupón -->
     <div id="interaction-message">Buscando el código QR...</div>
     <button id="coupon-button" onclick="showCoupon()">¡Reclamar Cupón Digital!</button>
 
@@ -109,6 +83,7 @@
         const marker = document.getElementById('pet-marker');
         const messageBox = document.getElementById('interaction-message');
         const couponButton = document.getElementById('coupon-button');
+        const catModel = document.getElementById('cat-gltf'); // Referencia al modelo GLTF del gato
 
         // --- FUNCIONES DE UTILIDAD PARA EL AUDIO (Generación de tono simple) ---
         let audioContext;
@@ -117,28 +92,21 @@
         // Inicializa el contexto de audio solo tras una interacción del usuario
         function initAudio() {
             if (audioContext) return;
-            // Intenta crear el contexto, manejando compatibilidad
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             gainNode = audioContext.createGain();
             gainNode.connect(audioContext.destination);
-            // Asegura que el sonido empieza mudo
             gainNode.gain.setValueAtTime(0, audioContext.currentTime);
         }
 
         // Reproduce un sonido de tono (chirp)
         function playSound(frequency, duration) {
-            initAudio(); // Asegura la inicialización
-
+            initAudio();
             const oscillator = audioContext.createOscillator();
             oscillator.type = 'sine';
             oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
             oscillator.connect(gainNode);
-
-            // Iniciar el sonido (a volumen 1, para un bip corto y notorio)
             gainNode.gain.setValueAtTime(1, audioContext.currentTime);
             oscillator.start();
-
-            // Detener el sonido después de la duración con un fade-out rápido
             gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
             oscillator.stop(audioContext.currentTime + duration);
         }
@@ -150,20 +118,23 @@
 
                 // Evento 1: Cuando el marcador (QR) es encontrado
                 marker.addEventListener('markerFound', () => {
-                    messageBox.innerText = '¡La mascota didaci canvas ha aparecido! TÓCALA para interactuar.';
+                    messageBox.innerText = '¡El gato didaci canvas ha aparecido! TÓCALO para interactuar.';
                     messageBox.classList.add('visible');
                     // Reiniciar estados al encontrar el marcador
                     couponButton.style.display = 'none';
                     isDancing = false;
-                    el.removeAttribute('animation__dance');
-                    el.removeAttribute('animation__spin');
+                    // Asegurarse de que el gato esté en su animación "idle" o por defecto
+                    if (catModel && catModel.components['animation-mixer']) {
+                        catModel.setAttribute('animation-mixer', 'clip: idle;'); // Asume 'idle' como animación por defecto
+                    }
+                    el.removeAttribute('animation__jump'); // Reinicia la animación de salto si existe
+                    el.removeAttribute('animation__spin'); // Reinicia la animación de giro si existe
                 });
 
                 // Evento 2: Cuando el marcador (QR) es perdido
                 marker.addEventListener('markerLost', () => {
                     messageBox.innerText = 'Buscando el código QR...';
                     couponButton.style.display = 'none';
-                    // Nota: Mantenemos 'visible' para indicar que está esperando el marcador
                 });
 
                 // Evento 3: Lógica de Interacción al Tocar (click o tap)
@@ -176,18 +147,30 @@
                     return;
                 }
 
-                // Obtener el elemento del modelo
                 const petModelEl = document.getElementById('pet-model');
+                
+                // 1. Iniciar Baile (Animaciones para el gato)
+                // Si el modelo GLTF tiene una animación llamada "dance" o "wave", la usamos.
+                // Si no, usaremos animaciones de A-Frame para simular un baile (salto y giro).
+                if (catModel && catModel.components['animation-mixer'] && catModel.components['animation-mixer'].data.clip !== 'dance') {
+                    // Si el modelo tiene una animación "dance", la activamos
+                    // NOTA: 'dance' es solo un ejemplo, el nombre real dependerá del modelo GLTF.
+                    // Si el modelo RiggedSimple no tiene una animación de "baile", esta línea no hará nada
+                    // y solo se aplicarán las animaciones de A-Frame.
+                    catModel.setAttribute('animation-mixer', {clip: 'dance', loop: 'repeat'});
+                }
 
-                // 1. Iniciar Baile (Animaciones)
-                petModelEl.setAttribute('animation__dance', {
+                // Animación de A-Frame para simular un "baile" si el GLTF no tiene uno específico.
+                // Un pequeño salto
+                petModelEl.setAttribute('animation__jump', {
                     property: 'position',
-                    from: '0 0.5 0',
-                    to: '0 0.6 0', // Pequeño salto
+                    from: '0 0.0 0',
+                    to: '0 0.1 0',
                     dir: 'alternate',
                     loop: true,
-                    dur: 200 // Velocidad del baile
+                    dur: 250 // Velocidad del "salto"
                 });
+                // Un giro
                 petModelEl.setAttribute('animation__spin', {
                     property: 'rotation',
                     to: '0 360 0',
@@ -197,12 +180,12 @@
                 });
 
                 isDancing = true;
-                messageBox.innerText = '¡Qué bien! didaci canvas está bailando para ti. ¡Aquí está tu recompensa!';
+                messageBox.innerText = '¡Qué bien! El gato didaci canvas está bailando para ti. ¡Aquí está tu recompensa!';
 
                 // 2. Activar Sonido
                 playSound(880, 0.2);
 
-                // 3. Lanzar Cupón Digital (mostrar el botón de la UI)
+                // 3. Lanzar Cupón Digital
                 setTimeout(() => {
                     couponButton.style.display = 'block';
                     messageBox.innerText = '¡Toca el botón para conseguir tu premio!';
@@ -212,12 +195,10 @@
 
         // --- FUNCIÓN DEL CUPÓN DIGITAL (Control UI) ---
         function showCoupon() {
-            // Lógica de simulación de reclamo de cupón
             couponButton.style.display = 'none';
-            messageBox.style.background = 'rgba(255, 69, 0, 0.9)'; // Cambia el color para resaltar
+            messageBox.style.background = 'rgba(255, 69, 0, 0.9)';
             messageBox.innerText = '🎉 CUPÓN RECLAMADO: ¡20% de descuento en tu próxima compra! 🎉';
 
-            // Aquí se haría la redirección real:
             // window.open("https://tu-sitio-web.com/reclamo-cupon", "_blank");
         }
     </script>
