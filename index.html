@@ -6,29 +6,76 @@
     <title>AR Perro - didaci canvas</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <style>
+        body { margin:0; overflow:hidden; }
+        #msg { position:fixed; top:10px; left:50%; transform:translateX(-50%); background:rgba(4,91,193,0.9); color:white; padding:12px 24px; border-radius:10px; font-size:15px; z-index:1000; opacity:0; transition:opacity .5s; pointer-events:none; }
+        #msg.visible { opacity:1; }
+        #btn { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); padding:14px 28px; background:#FFD700; color:#333; border:none; border-radius:25px; font-weight:bold; cursor:pointer; box-shadow:0 6px #b89f00; z-index:1000; display:none; }
+        #btn:active { box-shadow:0 2px #b89f00; transform:translateX(-50%) translateY(4px); }
+    </style>
 </head>
-<body style="margin:0; overflow:hidden;">
+<body>
+    <div id="msg">Apunta al marcador HIRO...</div>
+    <button id="btn" onclick="showCoupon()">¡Reclamar Cupón!</button>
 
     <a-scene embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
-        <a-marker preset="hiro">
-            <a-entity 
-                gltf-model="#perro-glb"
-                scale="0.3 0.3 0.3"
-                position="0 0 0"
-                rotation="0 180 0">
-            </a-entity>
+        <a-marker preset="hiro" registerevents>
+            <a-entity cursor="fuse:false; rayOrigin:mouse"></a-entity>
+            <a-entity id="perro" gltf-model="#perro-glb" scale="0.3 0.3 0.3" position="0 0 0" rotation="0 180 0" interactive-pet></a-entity>
         </a-marker>
 
-        <!-- TU MODELO (después de activar GitHub Pages) -->
-        <a-assets>
-            <a-asset-item 
-                id="perro-glb" 
-                src="https://jjebbansmx2n25-lgtm.github.io/didaci-canvas-ar/Perro.glb">
-            </a-asset-item>
+        <a-assets timeout="60000">
+            <a-asset-item id="perro-glb" src="https://ijebbansmx2n25-lgtm.github.io/didaci-canvas-ar/Perro.glb"></a-asset-item>
         </a-assets>
 
         <a-entity camera></a-entity>
     </a-scene>
 
+    <script>
+        let dancing = false;
+        const msg = document.getElementById('msg');
+        const btn = document.getElementById('btn');
+        const perro = document.getElementById('perro');
+
+        perro.addEventListener('model-loaded', () => console.log('Perro cargado'));
+        perro.addEventListener('model-error', () => msg.innerText = 'Error: modelo no encontrado');
+
+        AFRAME.registerComponent('interactive-pet', {
+            init: function () {
+                const el = this.el;
+                const marker = el.parentNode;
+
+                marker.addEventListener('markerFound', () => {
+                    msg.innerText = '¡Toca al perrito!';
+                    msg.classList.add('visible');
+                    btn.style.display = 'none';
+                    dancing = false;
+                });
+
+                marker.addEventListener('markerLost', () => {
+                    msg.innerText = 'Buscando...';
+                    msg.classList.remove('visible');
+                });
+
+                el.addEventListener('click', () => {
+                    if (dancing) return;
+                    dancing = true;
+                    el.setAttribute('animation__jump', {property:'position', to:'0 0.3 0', dur:300, dir:'alternate', loop:3, easing:'easeOutBounce'});
+                    el.setAttribute('animation__spin', {property:'rotation', to:'0 180 720', dur:1500, easing:'linear'});
+                    msg.innerText = '¡Bailando!';
+                    setTimeout(() => {
+                        btn.style.display = 'block';
+                        msg.innerText = '¡Toca para tu cupón!';
+                    }, 1200);
+                });
+            }
+        });
+
+        function showCoupon() {
+            btn.style.display = 'none';
+            msg.style.background = 'rgba(255,69,0,0.95)';
+            msg.innerText = 'CUPÓN: 20% OFF - ¡Gracias!';
+        }
+    </script>
 </body>
 </html>
