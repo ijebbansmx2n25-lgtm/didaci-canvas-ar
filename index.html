@@ -3,207 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Mascota Cubo Interactiva - didaci canvas</title>
+    <title>AR Perro Interactivo - didaci canvas</title>
 
     <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <!-- AR.js (versión estable) -->
+    <!-- AR.js -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
-
+        
         #interaction-message {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(4, 91, 193, 0.85);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.5s;
-            font-size: 14px;
-            text-align: center;
-            pointer-events: none;
+            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+            background: rgba(4, 91, 193, 0.9); color: white; padding: 12px 24px;
+            border-radius: 10px; font-size: 15px; z-index: 1000; opacity: 0;
+            transition: opacity 0.5s; text-align: center; pointer-events: none;
         }
         #interaction-message.visible { opacity: 1; }
 
         #coupon-button {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 25px;
-            background: #FFD700;
-            color: #333;
-            border: none;
-            border-radius: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 6px #b89f00;
-            transition: all 0.1s ease;
-            z-index: 1000;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            padding: 14px 28px; background: #FFD700; color: #333; border: none;
+            border-radius: 25px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 6px #b89f00; transition: all 0.1s ease; z-index: 1000;
             display: none;
         }
         #coupon-button:active {
-            box-shadow: 0 2px #b89f00;
-            transform: translateX(-50%) translateY(4px);
+            box-shadow: 0 2px #b89f00; transform: translateX(-50%) translateY(4px);
         }
     </style>
 </head>
 <body>
 
     <!-- UI -->
-    <div id="interaction-message">Buscando el marcador...</div>
-    <button id="coupon-button" onclick="showCoupon()">¡Reclamar Cupón Digital!</button>
+    <div id="interaction-message">Apunta al marcador HIRO...</div>
+    <button id="coupon-button" onclick="showCoupon()">¡Reclamar Cupón!</button>
 
-    <!-- ESCENA A-FRAME + AR.js -->
+    <!-- ESCENA AR -->
     <a-scene
         embedded
         vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true;"
-        arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;">
+        arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;"
+        renderer="logarithmicDepthBuffer: true;">
 
-        <!-- Marcador Hiro (imprime este QR: https://jeromeetienne.github.io/AR.js/data/images/hiro.png) -->
+        <!-- MARCADOR HIRO -->
         <a-marker preset="hiro" registerevents>
             
-            <!-- Cursor para interacción táctil -->
+            <!-- Cursor táctil -->
             <a-entity cursor="fuse: false; rayOrigin: mouse"></a-entity>
 
-            <!-- Mascota CUBO -->
-            <a-entity id="pet-model" position="0 0.5 0" interactive-pet>
-                <a-box
-                    id="body-cube"
-                    width="1" height="1" depth="1"
-                    color="#5E17EB"
-                    material="shader: standard; metalness: 0.8; roughness: 0.1"
-                    animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
-                </a-box>
-
-                <!-- Luces parpadeantes -->
-                <a-sphere position="0.5 0.5 0.5" radius="0.1" color="#FFD700"
-                    animation="property: scale; from: 1 1 1; to: 1.3 1.3 1.3; dir: alternate; loop: true; dur: 600"></a-sphere>
-                <a-sphere position="-0.5 0.5 -0.5" radius="0.1" color="#FFD700"
-                    animation="property: scale; from: 1 1 1; to: 1.3 1.3 1.3; dir: alternate; loop: true; dur: 600; delay: 300"></a-sphere>
+            <!-- TU PERRO 3D -->
+            <a-entity 
+                id="perro"
+                gltf-model="#perro-glb"
+                scale="0.4 0.4 0.4"
+                position="0 0 0"
+                rotation="0 180 0"
+                animation-mixer="clip: Idle; loop: repeat"
+                interactive-pet>
             </a-entity>
+
         </a-marker>
+
+        <!-- TU MODELO (URL OFICIAL) -->
+        <a-assets timeout="30000">
+            <a-asset-item 
+                id="perro-glb" 
+                src="https://jjebbansmx2n25-lgtm.github.io/didaci-canvas-ar/Perro.glb">
+            </a-asset-item>
+        </a-assets>
 
         <!-- Cámara -->
         <a-entity camera></a-entity>
     </a-scene>
 
-    <!-- SCRIPT (DEBE IR DESPUÉS DE LA ESCENA) -->
+    <!-- SCRIPT -->
     <script>
-        // === VARIABLES ===
         let isDancing = false;
         const messageBox = document.getElementById('interaction-message');
         const couponButton = document.getElementById('coupon-button');
         let audioContext = null;
-        let gainNode = null;
 
-        // === AUDIO ===
         function initAudio() {
             if (audioContext) return;
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            gainNode = audioContext.createGain();
-            gainNode.connect(audioContext.destination);
-            gainNode.gain.value = 0;
         }
 
-        function playSound(freq, duration) {
+        function playSound(freq, dur = 0.2) {
             initAudio();
+            const gain = audioContext.createGain();
             const osc = audioContext.createOscillator();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, audioContext.currentTime);
-            osc.connect(gainNode);
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + dur);
+            osc.connect(gain).connect(audioContext.destination);
             osc.start();
-            osc.stop(audioContext.currentTime + duration);
+            osc.stop(audioContext.currentTime + dur);
         }
 
-        // === COMPONENTE INTERACTIVO ===
         AFRAME.registerComponent('interactive-pet', {
             init: function () {
                 const el = this.el;
-                const marker = el.parentNode; // <a-marker>
+                const marker = el.parentNode;
 
-                // Marcador encontrado
                 el.sceneEl.addEventListener('markerFound', (e) => {
                     if (e.target !== marker) return;
-                    messageBox.innerText = '¡Toca el CUBO para que baile!';
+                    messageBox.innerText = '¡Toca al perrito para que baile!';
                     messageBox.classList.add('visible');
                     couponButton.style.display = 'none';
                     isDancing = false;
-                    el.removeAttribute('animation__dance');
-                    el.removeAttribute('animation__spin');
+                    el.setAttribute('animation-mixer', 'clip: Idle');
                 });
 
-                // Marcador perdido
                 el.sceneEl.addEventListener('markerLost', (e) => {
                     if (e.target !== marker) return;
-                    messageBox.innerText = 'Buscando el marcador...';
+                    messageBox.innerText = 'Buscando...';
                     messageBox.classList.remove('visible');
                     couponButton.style.display = 'none';
                 });
 
-                // Click / Tap en el cubo
                 el.addEventListener('click', () => {
-                    if (isDancing) {
-                        messageBox.innerText = '¡Ya está bailando! Reclama tu cupón.';
-                        return;
-                    }
-
+                    if (isDancing) return;
                     isDancing = true;
 
-                    // Animación de baile
-                    el.setAttribute('animation__dance', {
+                    el.setAttribute('animation-mixer', {
+                        clip: 'Dance',
+                        loop: 'once',
+                        crossFadeDuration: 0.4
+                    });
+
+                    el.object3D.position.y = 0;
+                    el.setAttribute('animation__jump', {
                         property: 'position',
-                        from: '0 0.5 0',
-                        to: '0 0.7 0',
-                        dur: 300,
+                        to: '0 0.4 0',
+                        dur: 400,
                         dir: 'alternate',
-                        loop: true,
-                        easing: 'easeInOutSine'
+                        loop: 2,
+                        easing: 'easeOutQuad'
                     });
 
                     el.setAttribute('animation__spin', {
                         property: 'rotation',
-                        to: '0 360 0',
-                        dur: 1500,
-                        loop: true,
+                        to: '0 540 0',
+                        dur: 1200,
                         easing: 'linear'
                     });
 
-                    messageBox.innerText = '¡El CUBO está bailando! Aquí viene tu premio...';
-                    playSound(880, 0.2);
+                    messageBox.innerText = '¡Guau! ¡Bailando! Aquí viene tu premio...';
+                    playSound(880, 0.15);
+                    playSound(1100, 0.15);
 
                     setTimeout(() => {
                         couponButton.style.display = 'block';
-                        messageBox.innerText = '¡Toca el botón para reclamar tu cupón!';
-                    }, 600);
+                        messageBox.innerText = '¡Toca para reclamar tu cupón!';
+                    }, 1000);
                 });
             }
         });
 
-        // === CUPÓN ===
         function showCoupon() {
             couponButton.style.display = 'none';
-            messageBox.style.background = 'rgba(255, 69, 0, 0.9)';
-            messageBox.innerText = '🎉 ¡CUPÓN RECLAMADO! 20% OFF en tu próxima compra 🎉';
-            playSound(1200, 0.3);
-            playSound(1500, 0.3);
+            messageBox.style.background = 'rgba(255, 69, 0, 0.95)';
+            messageBox.innerText = 'CUPÓN: 20% OFF - ¡Gracias por jugar con tu perrito!';
+            playSound(1300, 0.3);
+            playSound(1600, 0.3);
         }
 
-        // === INICIALIZACIÓN ===
         document.addEventListener('DOMContentLoaded', () => {
             messageBox.classList.remove('visible');
         });
     </script>
-
 </body>
 </html>
