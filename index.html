@@ -3,294 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Perro Interactivo - didaci canvas</title>
-
-    <!-- A-Frame -->
+    <title>AR Perro - didaci canvas</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <!-- AR.js -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-
-    <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            font-family: 'Inter', sans-serif; 
-            background: #000;
-        }
-        
-        #interaction-message {
-            position: fixed; 
-            top: 10px; 
-            left: 50%; 
-            transform: translateX(-50%);
-            background: rgba(4, 91, 193, 0.95); 
-            color: white; 
-            padding: 12px 24px;
-            border-radius: 10px; 
-            font-size: 15px; 
-            z-index: 1000; 
-            opacity: 0;
-            transition: opacity 0.5s; 
-            text-align: center; 
-            pointer-events: none;
-            max-width: 90%;
-        }
-        #interaction-message.visible { opacity: 1; }
-
-        #coupon-button {
-            position: fixed; 
-            bottom: 20px; 
-            left: 50%; 
-            transform: translateX(-50%);
-            padding: 14px 28px; 
-            background: #FFD700; 
-            color: #333; 
-            border: none;
-            border-radius: 25px; 
-            font-weight: bold; 
-            cursor: pointer;
-            box-shadow: 0 6px #b89f00; 
-            transition: all 0.1s ease; 
-            z-index: 1000;
-            display: none;
-            font-size: 16px;
-        }
-        #coupon-button:active {
-            box-shadow: 0 2px #b89f00; 
-            transform: translateX(-50%) translateY(4px);
-        }
-
-        /* Loading indicator */
-        #loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 18px;
-            z-index: 1001;
-            text-align: center;
-        }
-    </style>
 </head>
-<body>
+<body style="margin:0; overflow:hidden;">
 
-    <!-- UI -->
-    <div id="loading">Cargando tu perrito 3D...</div>
-    <div id="interaction-message">Apunta al marcador HIRO para ver al perrito</div>
-    <button id="coupon-button" onclick="showCoupon()">¡Reclamar Cupón!</button>
-
-    <!-- ESCENA AR -->
-    <a-scene
-        embedded
-        vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;"
-        renderer="logarithmicDepthBuffer: true; antialias: true; colorManagement: true; sortObjects: true;"
-        background="color: #ECEFF1;">
-
-        <!-- MARCADOR HIRO -->
-        <a-marker preset="hiro" registerevents>
-            
-            <!-- Cursor táctil -->
-            <a-entity cursor="fuse: false; rayOrigin: mouse" raycaster="objects: .clickable"></a-entity>
-
-            <!-- TU PERRO 3D -->
+    <a-scene embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+        <a-marker preset="hiro">
             <a-entity 
-                id="perro"
-                class="clickable"
                 gltf-model="#perro-glb"
                 scale="0.3 0.3 0.3"
                 position="0 0 0"
-                rotation="0 180 0"
-                interactive-pet>
-                
-                <!-- Luz para el modelo -->
-                <a-light 
-                    type="ambient" 
-                    color="#445451" 
-                    intensity="0.5">
-                </a-light>
-                <a-light 
-                    type="point" 
-                    color="#FFFFFF" 
-                    intensity="0.8"
-                    position="0 1 0">
-                </a-light>
-
+                rotation="0 180 0">
             </a-entity>
-
         </a-marker>
 
-        <!-- ASSETS - TU MODELO -->
-        <a-assets timeout="60000">
+        <!-- TU MODELO (después de activar GitHub Pages) -->
+        <a-assets>
             <a-asset-item 
                 id="perro-glb" 
                 src="https://jjebbansmx2n25-lgtm.github.io/didaci-canvas-ar/Perro.glb">
             </a-asset-item>
         </a-assets>
 
-        <!-- Cámara -->
-        <a-entity camera look-controls></a-entity>
-        
-        <!-- Luces generales -->
-        <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
-        <a-light type="directional" color="#FFFFFF" intensity="0.6" position="-1 1 0"></a-light>
-
+        <a-entity camera></a-entity>
     </a-scene>
-
-    <!-- SCRIPT -->
-    <script>
-        // Variables globales
-        let isDancing = false;
-        let isModelLoaded = false;
-        const messageBox = document.getElementById('interaction-message');
-        const couponButton = document.getElementById('coupon-button');
-        const loading = document.getElementById('loading');
-        const perro = document.getElementById('perro');
-        let audioContext = null;
-
-        // Audio
-        function initAudio() {
-            if (audioContext) return;
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        function playSound(freq, dur = 0.2) {
-            initAudio();
-            const gain = audioContext.createGain();
-            const osc = audioContext.createOscillator();
-            osc.type = 'sine';
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + dur);
-            osc.connect(gain).connect(audioContext.destination);
-            osc.start();
-            osc.stop(audioContext.currentTime + dur);
-        }
-
-        // Componente interactivo
-        AFRAME.registerComponent('interactive-pet', {
-            init: function () {
-                const el = this.el;
-                const marker = el.parentNode;
-
-                // Cuando el modelo carga
-                el.addEventListener('model-loaded', () => {
-                    isModelLoaded = true;
-                    loading.style.display = 'none';
-                    console.log('✅ Perro cargado correctamente');
-                });
-
-                // Error al cargar modelo
-                el.addEventListener('model-error', () => {
-                    loading.innerHTML = '❌ Error cargando el modelo<br>Verifica la URL';
-                    console.error('❌ Error cargando Perro.glb');
-                });
-
-                // Marcador encontrado
-                marker.addEventListener('markerFound', () => {
-                    if (!isModelLoaded) return;
-                    messageBox.innerText = '¡Toca al perrito para que baile! 🐶';
-                    messageBox.classList.add('visible');
-                    couponButton.style.display = 'none';
-                    isDancing = false;
-                    
-                    // Animación idle (rotación suave)
-                    el.setAttribute('animation', {
-                        property: 'rotation',
-                        to: '0 180 360',
-                        dur: 8000,
-                        loop: true,
-                        easing: 'linear'
-                    });
-                });
-
-                // Marcador perdido
-                marker.addEventListener('markerLost', () => {
-                    messageBox.innerText = 'Buscando el marcador... 🔍';
-                    messageBox.classList.remove('visible');
-                    couponButton.style.display = 'none';
-                });
-
-                // Interacción - TOCAR AL PERRO
-                el.addEventListener('click', () => {
-                    if (isDancing || !isModelLoaded) return;
-                    
-                    console.log('🎉 ¡Perro tocado!');
-                    isDancing = true;
-
-                    // Stop idle animation
-                    el.removeAttribute('animation');
-
-                    // Animación de baile - SALTO
-                    el.setAttribute('animation__jump', {
-                        property: 'position',
-                        from: '0 0 0',
-                        to: '0 0.3 0',
-                        dur: 300,
-                        dir: 'alternate',
-                        loop: 3,
-                        easing: 'easeOutBounce'
-                    });
-
-                    // Animación de baile - GIRO
-                    el.setAttribute('animation__spin', {
-                        property: 'rotation',
-                        to: '0 180 720',
-                        dur: 1500,
-                        easing: 'linear'
-                    });
-
-                    // Sonidos
-                    playSound(880, 0.15);  // La
-                    setTimeout(() => playSound(1100, 0.15), 100); // Ti
-                    setTimeout(() => playSound(1310, 0.15), 200); // Do
-
-                    // Mensajes
-                    messageBox.innerText = '¡Guau! ¡Tu perrito está bailando! 🐕💃';
-                    messageBox.style.background = 'rgba(255, 193, 7, 0.95)';
-
-                    // Mostrar cupón
-                    setTimeout(() => {
-                        couponButton.style.display = 'block';
-                        messageBox.innerText = '¡Toca el botón dorado para tu premio! 🎁';
-                        messageBox.style.background = 'rgba(4, 91, 193, 0.95)';
-                    }, 1200);
-                });
-            }
-        });
-
-        // Función del cupón
-        function showCoupon() {
-            couponButton.style.display = 'none';
-            messageBox.style.background = 'rgba(255, 69, 0, 0.95)';
-            messageBox.innerText = '🎉 ¡CUPÓN RECLAMADO! 🎉\n20% OFF en didaci canvas\n¡Gracias por jugar! 🐶❤️';
-            
-            // Sonidos de victoria
-            setTimeout(() => playSound(1300, 0.3), 0);
-            setTimeout(() => playSound(1600, 0.3), 200);
-            setTimeout(() => playSound(1900, 0.3), 400);
-        }
-
-        // Inicialización
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                if (!isModelLoaded) {
-                    loading.innerHTML = '⏳ Cargando... Usa un móvil moderno<br>o verifica tu conexión';
-                }
-            }, 5000);
-        });
-
-        // Debug - presiona 'D' para info
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'd' || e.key === 'D') {
-                console.log('=== DEBUG AR ===');
-                console.log('- Modelo cargado:', isModelLoaded);
-                console.log('- Bailando:', isDancing);
-                console.log('- Marcador:', document.querySelector('a-marker'));
-            }
-        });
-    </script>
 
 </body>
 </html>
