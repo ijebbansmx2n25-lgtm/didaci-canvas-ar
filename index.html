@@ -62,9 +62,9 @@
 
     <!--
       ESCENA A-FRAME Y AR.JS
-      Usamos el preset 'hiro' para la detección.
+      IMPORTANTE: 'debugUIEnabled: true'
     -->
-    <a-scene embedded arjs='sourceType: webcam; detectionMode: mono; cameraParametersUrl: https://raw.githack.com/AR-js-org/AR.js/master/data/camera_para.dat; debugUIEnabled: false;'>
+    <a-scene embedded arjs='sourceType: webcam; detectionMode: mono; cameraParametersUrl: https://raw.githack.com/AR-js-org/AR.js/master/data/camera_para.dat; debugUIEnabled: true;'>
 
         <!-- Marcador AR - Usando el preset 'hiro' para pruebas -->
         <a-marker id="pet-marker" preset='hiro'>
@@ -116,28 +116,21 @@
         // Inicializa el contexto de audio solo tras una interacción del usuario
         function initAudio() {
             if (audioContext) return;
-            // Intenta crear el contexto, manejando compatibilidad
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             gainNode = audioContext.createGain();
             gainNode.connect(audioContext.destination);
-            // Asegura que el sonido empieza mudo
             gainNode.gain.setValueAtTime(0, audioContext.currentTime);
         }
 
         // Reproduce un sonido de tono (chirp)
         function playSound(frequency, duration) {
-            initAudio(); // Asegura la inicialización
-
+            initAudio(); 
             const oscillator = audioContext.createOscillator();
             oscillator.type = 'sine';
             oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
             oscillator.connect(gainNode);
-
-            // Iniciar el sonido (a volumen 1, para un bip corto y notorio)
             gainNode.gain.setValueAtTime(1, audioContext.currentTime);
             oscillator.start();
-
-            // Detener el sonido después de la duración con un fade-out rápido
             gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
             oscillator.stop(audioContext.currentTime + duration);
         }
@@ -151,7 +144,6 @@
                 marker.addEventListener('markerFound', () => {
                     messageBox.innerText = '¡El CUBO didaci canvas ha aparecido! TÓCALO para interactuar.';
                     messageBox.classList.add('visible');
-                    // Reiniciar estados al encontrar el marcador
                     couponButton.style.display = 'none';
                     isDancing = false;
                     el.removeAttribute('animation__dance');
@@ -174,17 +166,16 @@
                     return;
                 }
 
-                // Obtener el elemento del modelo
                 const petModelEl = document.getElementById('pet-model');
 
                 // 1. Iniciar Baile (Animaciones)
                 petModelEl.setAttribute('animation__dance', {
                     property: 'position',
                     from: '0 0.5 0',
-                    to: '0 0.6 0', // Pequeño salto
+                    to: '0 0.6 0', 
                     dir: 'alternate',
                     loop: true,
-                    dur: 200 // Velocidad del baile
+                    dur: 200 
                 });
                 petModelEl.setAttribute('animation__spin', {
                     property: 'rotation',
@@ -210,13 +201,9 @@
 
         // --- FUNCIÓN DEL CUPÓN DIGITAL (Control UI) ---
         function showCoupon() {
-            // Lógica de simulación de reclamo de cupón
             couponButton.style.display = 'none';
-            messageBox.style.background = 'rgba(255, 69, 0, 0.9)'; // Cambia el color para resaltar
+            messageBox.style.background = 'rgba(255, 69, 0, 0.9)'; 
             messageBox.innerText = '🎉 CUPÓN RECLAMADO: ¡20% de descuento en tu próxima compra! 🎉';
-
-            // Aquí se haría la redirección real:
-            // window.open("https://tu-sitio-web.com/reclamo-cupon", "_blank");
         }
     </script>
 
