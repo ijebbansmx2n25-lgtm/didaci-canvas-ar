@@ -22,19 +22,17 @@
 
     <a-scene embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;">
         <!-- MARCADOR HIRO -->
-        <a-marker preset="hiro" registerevents>
-            <a-entity cursor="fuse:false; rayOrigin:mouse" raycaster="objects: .clickable"></a-entity>
+        <a-marker preset="hiro" registerevents interactive-marker>
+            <a-entity cursor="fuse:false; rayOrigin:mouse"></a-entity>
 
-            <!-- GATO INTERACTIVO -->
+            <!-- GATO -->
             <a-entity 
                 id="gato" 
-                class="clickable"
                 gltf-model="#gato-glb" 
                 scale="0.2 0.2 0.2" 
                 position="0 0.1 0" 
                 rotation="0 180 0" 
-                animation-mixer="clip: Idle; loop: repeat" 
-                interactive-pet>
+                animation-mixer="clip: Idle; loop: repeat">
             </a-entity>
         </a-marker>
 
@@ -57,72 +55,71 @@
         gato.addEventListener('model-loaded', () => {
             loaded = true;
             loading.style.display = 'none';
-            console.log('Gato cargado - listo para interactuar');
+            console.log('Gato cargado');
         });
 
-        gato.addEventListener('model-error', () => {
-            loading.innerHTML = 'Error: modelo no encontrado<br>Verifica la conexión';
-        });
-
-        AFRAME.registerComponent('interactive-pet', {
+        // COMPONENTE PARA TOCAR TODO EL MARCADOR
+        AFRAME.registerComponent('interactive-marker', {
             init: function () {
-                const el = this.el;
-                const marker = el.parentNode;
+                const marker = this.el;
+                const gatoEntity = document.getElementById('gato');
 
                 marker.addEventListener('markerFound', () => {
                     if (!loaded) return;
-                    msg.innerText = '¡Toca al gatito para que baile! 🐱';
+                    msg.innerText = '¡Toca cualquier parte del marcador!';
                     msg.classList.add('visible');
                     btn.style.display = 'none';
                     dancing = false;
-                    el.setAttribute('animation-mixer', 'clip: Idle; loop: repeat; crossFadeDuration: 0.5');
+                    gatoEntity.setAttribute('animation-mixer', 'clip: Idle; loop: repeat');
                 });
 
                 marker.addEventListener('markerLost', () => {
-                    msg.innerText = 'Buscando el marcador... 🔍';
+                    msg.innerText = 'Buscando...';
                     msg.classList.remove('visible');
                 });
 
-                el.addEventListener('click', () => {
+                // TOCAR CUALQUIER PARTE DEL MARCADOR
+                marker.addEventListener('click', () => {
                     if (dancing || !loaded) return;
                     dancing = true;
 
-                    el.setAttribute('animation-mixer', {
+                    // Animación Dance (si existe)
+                    gatoEntity.setAttribute('animation-mixer', {
                         clip: 'Dance',
                         loop: 'once',
                         crossFadeDuration: 0.5
                     });
 
-                    el.setAttribute('animation__jump', {
+                    // Salto + giro
+                    gatoEntity.setAttribute('animation__jump', {
                         property: 'position',
-                        to: '0 0.3 0',
+                        to: '0 0.4 0',
                         dur: 400,
                         dir: 'alternate',
                         loop: 2,
                         easing: 'easeOutBounce'
                     });
 
-                    el.setAttribute('animation__spin', {
+                    gatoEntity.setAttribute('animation__spin', {
                         property: 'rotation',
                         to: '0 540 0',
                         dur: 1200,
                         easing: 'linear'
                     });
 
-                    msg.innerText = '¡Miau! ¡Bailando! 💃';
+                    msg.innerText = '¡Miau! ¡Bailando!';
                     msg.style.background = 'rgba(255,193,7,0.95)';
 
                     setTimeout(() => {
                         btn.style.display = 'block';
-                        msg.innerText = '¡Toca el botón para tu cupón! 🎁';
+                        msg.innerText = '¡Toca el botón para tu cupón!';
                         msg.style.background = 'rgba(4,91,193,0.95)';
                     }, 1200);
 
                     setTimeout(() => {
-                        if (!dancing) return;
-                        el.setAttribute('animation-mixer', 'clip: Idle; loop: repeat; crossFadeDuration: 0.5');
+                        gatoEntity.setAttribute('animation-mixer', 'clip: Idle; loop: repeat');
                         dancing = false;
-                    }, 2000);
+                    }, 2500);
                 });
             }
         });
