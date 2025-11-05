@@ -83,32 +83,23 @@
                     if (dancing || !loaded) return;
                     dancing = true;
 
-                    // Animación Dance (si existe)
-                    gatoEntity.setAttribute('animation-mixer', {
-                        clip: 'Dance',
-                        loop: 'once',
-                        crossFadeDuration: 0.5
-                    });
-
-                    // Salto + giro
-                    gatoEntity.setAttribute('animation__jump', {
+                    // Nueva animación: JumpSpin
+                    gatoEntity.setAttribute('animation__jumpSpin', {
                         property: 'position',
-                        to: '0 0.4 0',
-                        dur: 400,
-                        dir: 'alternate',
-                        loop: 2,
-                        easing: 'easeOutBounce'
+                        to: '0 0.5 0', // Salto más alto
+                        dur: 600,
+                        easing: 'easeOutQuad'
                     });
 
-                    gatoEntity.setAttribute('animation__spin', {
+                    gatoEntity.setAttribute('animation__spin360', {
                         property: 'rotation',
-                        to: '0 540 0',
+                        to: '0 540 0', // Giro de 360° (1.5 vueltas para fluidez)
                         dur: 1200,
                         easing: 'linear'
                     });
 
-                    msg.innerText = '¡Miau! ¡Bailando!';
-                    msg.style.background = 'rgba(255,193,7,0.95)';
+                    msg.innerText = '¡Miau! ¡Saltando y girando!';
+                    msg.style.background = 'rgba(255,105,180,0.95)'; // Rosa para diferenciar
 
                     setTimeout(() => {
                         btn.style.display = 'block';
@@ -117,9 +108,10 @@
                     }, 1200);
 
                     setTimeout(() => {
-                        gatoEntity.setAttribute('animation-mixer', 'clip: Idle; loop: repeat');
+                        gatoEntity.setAttribute('position', '0 0.1 0'); // Vuelve a la posición inicial
+                        gatoEntity.setAttribute('rotation', '0 180 0'); // Restaura rotación
                         dancing = false;
-                    }, 2500);
+                    }, 2000);
                 });
             }
         });
