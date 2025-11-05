@@ -17,14 +17,18 @@
 </head>
 <body>
     <div id="loading">Cargando tu gatito 3D...</div>
-    <div id="msg">Apunta al marcador HIRO...</div>
+    <div id="msg">Apunta a tu marcador QR...</div>
     <button id="btn" onclick="showCoupon()">¡Reclamar Cupón!</button>
 
-    <a-scene embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;">
-        <a-marker preset="hiro" registerevents>
+    <a-scene embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+        <!-- MARCADOR QR PERSONALIZADO -->
+        <a-marker 
+            type="pattern" 
+            registerevents 
+            url="https://ijebbansmx2n25-lgtm.github.io/didaci-canvas-ar/qr.patt">
             <a-entity cursor="fuse:false; rayOrigin:mouse" raycaster="objects: .clickable"></a-entity>
 
-            <!-- GATO INTERACTIVO CON ANIMACIONES -->
+            <!-- GATO INTERACTIVO -->
             <a-entity 
                 id="gato" 
                 class="clickable"
@@ -82,19 +86,16 @@
                     msg.classList.remove('visible');
                 });
 
-                // INTERACTIVIDAD - TOCAR EL GATO
                 el.addEventListener('click', () => {
                     if (dancing || !loaded) return;
                     dancing = true;
 
-                    // Cambia a animación Dance (si existe en el .glb)
                     el.setAttribute('animation-mixer', {
                         clip: 'Dance',
                         loop: 'once',
                         crossFadeDuration: 0.5
                     });
 
-                    // Fallback: Animación de salto + giro (si no hay Dance)
                     el.setAttribute('animation__jump', {
                         property: 'position',
                         to: '0 0.3 0',
@@ -120,7 +121,6 @@
                         msg.style.background = 'rgba(4,91,193,0.95)';
                     }, 1200);
 
-                    // Vuelve a Idle después del baile
                     setTimeout(() => {
                         if (!dancing) return;
                         el.setAttribute('animation-mixer', 'clip: Idle; loop: repeat; crossFadeDuration: 0.5');
