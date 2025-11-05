@@ -24,14 +24,15 @@
         <a-marker preset="hiro" registerevents>
             <a-entity cursor="fuse:false; rayOrigin:mouse" raycaster="objects: .clickable"></a-entity>
 
-            <!-- TU GATO - TAMAÑO AJUSTABLE -->
+            <!-- GATO MÁS GRANDE CON ANIMACIONES -->
             <a-entity 
                 id="gato" 
                 class="clickable"
                 gltf-model="#gato-glb" 
-                scale="0.1 0.1 0.1" 
-                position="0 0.05 0" 
+                scale="0.2 0.2 0.2" 
+                position="0 0.1 0" 
                 rotation="0 180 0" 
+                animation-mixer="clip: Idle; loop: repeat" 
                 interactive-pet>
             </a-entity>
         </a-marker>
@@ -55,7 +56,7 @@
         gato.addEventListener('model-loaded', () => {
             loaded = true;
             loading.style.display = 'none';
-            console.log('Gato cargado');
+            console.log('Gato cargado con animaciones');
         });
 
         gato.addEventListener('model-error', () => {
@@ -73,6 +74,7 @@
                     msg.classList.add('visible');
                     btn.style.display = 'none';
                     dancing = false;
+                    el.setAttribute('animation-mixer', 'clip: Idle; loop: repeat; crossFadeDuration: 0.5');
                 });
 
                 marker.addEventListener('markerLost', () => {
@@ -84,8 +86,29 @@
                     if (dancing || !loaded) return;
                     dancing = true;
 
-                    el.setAttribute('animation__jump', {property:'position', to:'0 0.15 0', dur:300, dir:'alternate', loop:3, easing:'easeOutBounce'});
-                    el.setAttribute('animation__spin', {property:'rotation', to:'0 180 720', dur:1500, easing:'linear'});
+                    // Animación de baile
+                    el.setAttribute('animation-mixer', {
+                        clip: 'Dance',
+                        loop: 'once',
+                        crossFadeDuration: 0.5
+                    });
+
+                    // Salto + giro
+                    el.setAttribute('animation__jump', {
+                        property: 'position',
+                        to: '0 0.3 0',
+                        dur: 400,
+                        dir: 'alternate',
+                        loop: 2,
+                        easing: 'easeOutBounce'
+                    });
+
+                    el.setAttribute('animation__spin', {
+                        property: 'rotation',
+                        to: '0 540 0',
+                        dur: 1200,
+                        easing: 'linear'
+                    });
 
                     msg.innerText = '¡Miau! ¡Bailando! 💃';
                     msg.style.background = 'rgba(255,193,7,0.95)';
