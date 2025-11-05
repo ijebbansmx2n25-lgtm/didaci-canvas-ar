@@ -17,15 +17,12 @@
 </head>
 <body>
     <div id="loading">Cargando tu gatito 3D...</div>
-    <div id="msg">Apunta a tu marcador QR...</div>
+    <div id="msg">Apunta al marcador HIRO...</div>
     <button id="btn" onclick="showCoupon()">¡Reclamar Cupón!</button>
 
-    <a-scene embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
-        <!-- MARCADOR QR PERSONALIZADO -->
-        <a-marker 
-            type="pattern" 
-            registerevents 
-            url="https://ijebbansmx2n25-lgtm.github.io/didaci-canvas-ar/qr.patt">
+    <a-scene embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;">
+        <!-- MARCADOR HIRO -->
+        <a-marker preset="hiro" registerevents>
             <a-entity cursor="fuse:false; rayOrigin:mouse" raycaster="objects: .clickable"></a-entity>
 
             <!-- GATO INTERACTIVO -->
