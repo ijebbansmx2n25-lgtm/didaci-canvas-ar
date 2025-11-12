@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Perro Interactivo - Didadic Canvas</title>
+    <title>AR Gato Interactivo - Didadic Canvas</title>
 
     <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
@@ -48,28 +48,25 @@
         renderer="logarithmicDepthBuffer: true;">
 
         <!-- MARCADOR HIRO -->
-        <a-marker preset="hiro" registerevents>
-            
-            <!-- Cursor táctil -->
+        <a-marker preset="hiro" registerevents interactive-marker>
             <a-entity cursor="fuse: false; rayOrigin: mouse"></a-entity>
 
-            <!-- PERRO 3D -->
+            <!-- GATO 3D -->
             <a-entity 
-                id="perro"
-                gltf-model="#perro-glb"
+                id="gato"
+                gltf-model="#gato-glb"
                 scale="0.4 0.4 0.4"
                 position="0 0 0"
                 rotation="0 180 0"
-                animation-mixer="clip: Idle; loop: repeat"
-                interactive-pet>
+                animation-mixer="clip: Idle; loop: repeat">
             </a-entity>
         </a-marker>
 
         <!-- CARGAR MODELO -->
-        <a-assets timeout="30000">
+        <a-assets timeout="90000">
             <a-asset-item 
-                id="perro-glb" 
-                src="https://ijebbansmx2n25-lgtm.github.io/didaci-canvas-ar/Perro.glb">
+                id="gato-glb" 
+                src="https://ijebbansmx2n25-lgtm.github.io/didaci-canvas-ar/Gato.glb">
             </a-asset-item>
         </a-assets>
 
@@ -80,9 +77,10 @@
     <!-- SCRIPT -->
     <script>
         let isDancing = false;
+        let loaded = false;
         const messageBox = document.getElementById('interaction-message');
         const couponButton = document.getElementById('coupon-button');
-        const perro = document.getElementById('perro');
+        const gato = document.getElementById('gato');
         let audioContext = null;
 
         // === AUDIO ===
@@ -104,43 +102,54 @@
             osc.stop(audioContext.currentTime + dur);
         }
 
-        // === INTERACCIÓN ===
-        AFRAME.registerComponent('interactive-pet', {
+        // === COMPONENTE INTERACTIVO (TOCAR TODO EL MARCADOR) ===
+        AFRAME.registerComponent('interactive-marker', {
             init: function () {
-                const el = this.el;
-                const marker = el.parentNode;
+                const marker = this.el;
+                const gatoEntity = document.getElementById('gato');
+
+                // Carga del modelo
+                gatoEntity.addEventListener('model-loaded', () => {
+                    loaded = true;
+                    console.log('Gato cargado');
+                });
+
+                gatoEntity.addEventListener('model-error', () => {
+                    console.error('Error cargando Gato.glb');
+                });
 
                 // Marcador encontrado
-                marker.addEventListener('markerFound', (e) => {
-                    messageBox.innerText = '¡Toca al perrito para que baile!';
+                marker.addEventListener('markerFound', () => {
+                    if (!loaded) return;
+                    messageBox.innerText = '¡Toca cualquier parte del marcador para que el gatito baile! 🐱';
                     messageBox.classList.add('visible');
                     couponButton.style.display = 'none';
                     isDancing = false;
-                    el.setAttribute('animation-mixer', 'clip: Idle');
+                    gatoEntity.setAttribute('animation-mixer', 'clip: Idle; loop: repeat');
                 });
 
                 // Marcador perdido
-                marker.addEventListener('markerLost', (e) => {
-                    messageBox.innerText = 'Buscando...';
+                marker.addEventListener('markerLost', () => {
+                    messageBox.innerText = 'Buscando el marcador... 🔍';
                     messageBox.classList.remove('visible');
                     couponButton.style.display = 'none';
                 });
 
-                // TOCAR AL PERRO
-                el.addEventListener('click', () => {
-                    if (isDancing) return;
+                // TOCAR CUALQUIER PARTE DEL MARCADOR
+                marker.addEventListener('click', () => {
+                    if (isDancing || !loaded) return;
                     isDancing = true;
 
                     // Reproduce animación de baile (si existe)
-                    el.setAttribute('animation-mixer', {
+                    gatoEntity.setAttribute('animation-mixer', {
                         clip: 'Dance',
                         loop: 'once',
                         crossFadeDuration: 0.4
                     });
 
                     // Salto + giro
-                    el.object3D.position.y = 0;
-                    el.setAttribute('animation__jump', {
+                    gatoEntity.object3D.position.y = 0;
+                    gatoEntity.setAttribute('animation__jump', {
                         property: 'position',
                         to: '0 0.4 0',
                         dur: 400,
@@ -149,14 +158,14 @@
                         easing: 'easeOutQuad'
                     });
 
-                    el.setAttribute('animation__spin', {
+                    gatoEntity.setAttribute('animation__spin', {
                         property: 'rotation',
                         to: '0 540 0',
                         dur: 1200,
                         easing: 'linear'
                     });
 
-                    messageBox.innerText = '¡Guau! ¡Bailando! Aquí viene tu premio...';
+                    messageBox.innerText = '¡Miau! ¡Bailando! Aquí viene tu premio...';
                     playSound(880, 0.15);
                     playSound(1100, 0.15);
 
@@ -164,6 +173,13 @@
                         couponButton.style.display = 'block';
                         messageBox.innerText = '¡Toca para reclamar tu cupón!';
                     }, 1000);
+
+                    // Vuelve a Idle
+                    setTimeout(() => {
+                        if (!isDancing) return;
+                        gatoEntity.setAttribute('animation-mixer', 'clip: Idle; loop: repeat');
+                        isDancing = false;
+                    }, 2000);
                 });
             }
         });
@@ -172,7 +188,7 @@
         function showCoupon() {
             couponButton.style.display = 'none';
             messageBox.style.background = 'rgba(255, 69, 0, 0.95)';
-            messageBox.innerText = 'CUPÓN: 20% OFF - ¡Gracias por jugar con tu perrito!';
+            messageBox.innerText = 'CUPÓN: 20% OFF - ¡Gracias por jugar con tu gatito!';
             playSound(1300, 0.3);
             playSound(1600, 0.3);
         }
